@@ -13,6 +13,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.Optional;
+import java.util.UUID;
 
 public class TokenAuthenticationFilter extends OncePerRequestFilter {
 
@@ -59,8 +60,8 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private void authenticateUser(String token) {
-        var username = jwtService.getUsername(token);
-        var user = userRepository.findByUsername(username).orElseThrow(InvalidCredentialsException::new);
+        var userId = UUID.fromString(jwtService.getUserId(token));
+        var user = userRepository.findById(userId).orElseThrow(InvalidCredentialsException::new);
 
         SecurityContextHolder.getContext()
                 .setAuthentication(new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities()));
