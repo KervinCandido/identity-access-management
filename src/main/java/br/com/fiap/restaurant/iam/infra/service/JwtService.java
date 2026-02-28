@@ -1,6 +1,7 @@
 package br.com.fiap.restaurant.iam.infra.service;
 
 import br.com.fiap.restaurant.iam.core.exception.InvalidCredentialsException;
+import br.com.fiap.restaurant.iam.infra.persistence.entity.UserEntity;
 import br.com.fiap.restaurant.iam.infra.vo.JwtBearerToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -9,8 +10,8 @@ import org.springframework.security.oauth2.jwt.*;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
-import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -35,12 +36,16 @@ public class JwtService {
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.joining(" "));
 
+        UserEntity user = (UserEntity) authentication;
+        var jti = UUID.randomUUID().toString();
+
         Instant expiresAt = now.plusSeconds(expiry);
         var claims = JwtClaimsSet.builder()
+            .id(jti)
             .issuer("restaurant-identity-access-management")
             .issuedAt(now)
             .expiresAt(expiresAt)
-            .subject(authentication.getUsername())
+            .subject(user.getId().toString())
             .claim("roles", scope)
             .build();
 
@@ -68,7 +73,7 @@ public class JwtService {
         }
     }
 
-    public String getUsername(String token) {
+    public String getUserId(String token) {
         Jwt jwt = jwtDecoder.decode(token);
         return jwt.getSubject();
     }
