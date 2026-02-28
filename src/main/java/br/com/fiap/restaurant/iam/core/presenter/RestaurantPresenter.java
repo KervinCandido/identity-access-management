@@ -1,0 +1,51 @@
+package br.com.fiap.restaurant.iam.core.presenter;
+
+import br.com.fiap.restaurant.iam.core.domain.model.Restaurant;
+import br.com.fiap.restaurant.iam.core.outbound.*;
+
+import java.util.stream.Collectors;
+
+public class RestaurantPresenter {
+
+    private RestaurantPresenter() {}
+
+    public static RestaurantPublicOutput toOutput(Restaurant restaurant) {
+
+        Long restaurantId = restaurant.getId();
+
+        return new RestaurantPublicOutput(
+                restaurant.getId(),
+                restaurant.getName(),
+                AddressPresenter.toOutput(restaurant.getAddress()),
+                restaurant.getCuisineType(),
+                restaurant.getOpeningHours().stream()
+                        .map(OpeningHoursPresenter::toOutput)
+                        .collect(Collectors.toUnmodifiableSet()),
+                restaurant.getMenuItems().stream()
+                        .map(menuItem -> MenuItemPresenter.toOutput(menuItem, restaurantId))
+                        .collect(Collectors.toUnmodifiableSet())
+        );
+    }
+
+    public static RestaurantManagementOutput toManagementOutput(Restaurant restaurant) {
+
+        Long restaurantId = restaurant.getId();
+
+        return new RestaurantManagementOutput(
+                restaurant.getId(),
+                restaurant.getName(),
+                AddressPresenter.toOutput(restaurant.getAddress()),
+                restaurant.getCuisineType(),
+                restaurant.getOpeningHours().stream()
+                        .map(OpeningHoursPresenter::toOutput)
+                        .collect(Collectors.toUnmodifiableSet()),
+                restaurant.getMenuItems().stream()
+                        .map(menuItem -> MenuItemPresenter.toOutput(menuItem, restaurantId))
+                        .collect(Collectors.toUnmodifiableSet()),
+                restaurant.getEmployees().stream()
+                        .map(UserPresenter::toSummaryOutput)
+                        .collect(Collectors.toUnmodifiableSet()),
+                UserPresenter.toSummaryOutput(restaurant.getOwner())
+        );
+    }
+}

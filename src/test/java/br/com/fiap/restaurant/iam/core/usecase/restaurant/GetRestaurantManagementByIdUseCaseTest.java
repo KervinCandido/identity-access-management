@@ -1,0 +1,247 @@
+package br.com.fiap.restaurant.iam.core.usecase.restaurant;
+
+import br.com.fiap.restaurant.iam.core.domain.model.Restaurant;
+import br.com.fiap.restaurant.iam.core.domain.model.User;
+import br.com.fiap.restaurant.iam.core.domain.model.util.RestaurantBuilder;
+import br.com.fiap.restaurant.iam.core.domain.model.util.UserBuilder;
+import br.com.fiap.restaurant.iam.core.domain.roles.RestaurantRoles;
+import br.com.fiap.restaurant.iam.core.domain.roles.UserRoles;
+import br.com.fiap.restaurant.iam.core.exception.OperationNotAllowedException;
+import br.com.fiap.restaurant.iam.core.exception.UserNotAuthenticatedException;
+import br.com.fiap.restaurant.iam.core.gateway.LoggedUserGateway;
+import br.com.fiap.restaurant.iam.core.gateway.RestaurantGateway;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.never;
+
+@ExtendWith(MockitoExtension.class)
+@DisplayName("Testes para GetRestaurantManagementByIdUseCase")
+class GetRestaurantManagementByIdUseCaseTest {
+
+    @Mock
+    private RestaurantGateway restaurantGateway;
+
+    @Mock
+    private LoggedUserGateway loggedUserGateway;
+
+    @InjectMocks
+    private GetRestaurantManagementByIdUseCase useCase;
+
+    @Test
+    @DisplayName("Deve permitir quando usuário tem mesmo id do ownerId (UUID) mesmo sendo outra instância")
+    void devePermitir_quandoUsuarioTemMesmoIdDoOwner_mesmoSendoOutraInstancia() {
+        // Arrange
+        Long restaurantId = 1L;
+        UUID ownerId = UUID.randomUUID();
+
+        User ownerFromRestaurant = new UserBuilder()
+                .withDefaults()
+                .withId(ownerId)
+                .withRole(UserRoles.RESTAURANT_OWNER)
+                .build();
+
+        User currentUser = new UserBuilder()
+                .withDefaults()
+                .withId(ownerId) // mesma UUID, outra instância
+                .build();
+
+        Restaurant restaurant = new RestaurantBuilder()
+                .withDefaults()
+                .withId(restaurantId)
+                .withOwner(ownerFromRestaurant)
+                .withEmployees(Set.of())
+                .build();
+
+        given(loggedUserGateway.hasRole(RestaurantRoles.VIEW_RESTAURANT_MANAGEMENT)).willReturn(true);
+        given(restaurantGateway.findByIdWithManagement(restaurantId)).willReturn(Optional.of(restaurant));
+        given(loggedUserGateway.requireCurrentUser()).willReturn(currentUser);
+
+        // Act
+        var result = useCase.execute(restaurantId);
+
+        // Assert
+        assertThat(result).isNotEmpty().hasValue(restaurant);
+
+        then(loggedUserGateway).should().hasRole(RestaurantRoles.VIEW_RESTAURANT_MANAGEMENT);
+        then(restaurantGateway).should().findByIdWithManagement(restaurantId);
+        then(loggedUserGateway).should().requireCurrentUser();
+    }
+
+    @Test
+    @DisplayName("Deve permitir quando usuário tem mesmo id de employee (UUID) mesmo sendo outra instância")
+    void devePermitir_quandoUsuarioTemMesmoIdDeEmployee_mesmoSendoOutraInstancia() {
+        // Arrange
+        Long restaurantId = 2L;
+        UUID employeeId = UUID.randomUUID();
+
+        User ownerFromRestaurant = new UserBuilder()
+                .withDefaults()
+                .withId(UUID.randomUUID())
+                .withRole(UserRoles.RESTAURANT_OWNER)
+                .build();
+
+        User employeeFromRestaurant = new UserBuilder()
+                .withDefaults()
+                .withId(employeeId)
+                .build();
+
+        User currentUser = new UserBuilder()
+                .withDefaults()
+                .withId(employeeId) // mesma UUID, outra instância
+                .build();
+
+        Restaurant restaurant = new RestaurantBuilder()
+                .withDefaults()
+                .withId(restaurantId)
+                .withOwner(ownerFromRestaurant)
+                .withEmployees(Set.of(employeeFromRestaurant))
+                .build();
+
+        given(loggedUserGateway.hasRole(RestaurantRoles.VIEW_RESTAURANT_MANAGEMENT)).willReturn(true);
+        given(restaurantGateway.findByIdWithManagement(restaurantId)).willReturn(Optional.of(restaurant));
+        given(loggedUserGateway.requireCurrentUser()).willReturn(currentUser);
+
+        // Act
+        var result = useCase.execute(restaurantId);
+
+        // Assert
+        assertThat(result).isNotEmpty().hasValue(restaurant);
+
+        then(loggedUserGateway).should().hasRole(RestaurantRoles.VIEW_RESTAURANT_MANAGEMENT);
+        then(restaurantGateway).should().findByIdWithManagement(restaurantId);
+        then(loggedUserGateway).should().requireCurrentUser();
+    }
+
+    @Test
+    @DisplayName("Deve negar quando usuário não é ownerId nem employee (por UUID)")
+    void deveNegar_quandoUsuarioNaoEhOwnerNemEmployee_porId() {
+        // Arrange
+        Long restaurantId = 3L;
+
+        User owner = new UserBuilder()
+                .withDefaults()
+                .withId(UUID.randomUUID())
+                .withRole(UserRoles.RESTAURANT_OWNER)
+                .build();
+
+        User employee = new UserBuilder()
+                .withDefaults()
+                .withId(UUID.randomUUID())
+                .build();
+
+        User currentUser = new UserBuilder()
+                .withDefaults()
+                .withId(UUID.randomUUID()) // diferente dos dois
+                .build();
+
+        Restaurant restaurant = new RestaurantBuilder()
+                .withDefaults()
+                .withId(restaurantId)
+                .withOwner(owner)
+                .withEmployees(Set.of(employee))
+                .build();
+
+        given(loggedUserGateway.hasRole(RestaurantRoles.VIEW_RESTAURANT_MANAGEMENT)).willReturn(true);
+        given(restaurantGateway.findByIdWithManagement(restaurantId)).willReturn(Optional.of(restaurant));
+        given(loggedUserGateway.requireCurrentUser()).willReturn(currentUser);
+
+        // Act + Assert
+        assertThatThrownBy(() -> useCase.execute(restaurantId))
+                .isInstanceOf(OperationNotAllowedException.class)
+                .hasMessageContaining("Access denied");
+
+        then(loggedUserGateway).should().hasRole(RestaurantRoles.VIEW_RESTAURANT_MANAGEMENT);
+        then(restaurantGateway).should().findByIdWithManagement(restaurantId);
+        then(loggedUserGateway).should().requireCurrentUser();
+    }
+
+    @Test
+    @DisplayName("Deve negar quando não autenticado (requireCurrentUser lança UserNotAuthenticatedException)")
+    void deveNegar_quandoNaoAutenticado() {
+        // Arrange
+        Long restaurantId = 4L;
+
+        Restaurant restaurant = new RestaurantBuilder()
+                .withDefaults()
+                .withId(restaurantId)
+                .withOwner(new UserBuilder()
+                        .withDefaults()
+                        .withId(UUID.randomUUID())
+                        .withRole(UserRoles.RESTAURANT_OWNER)
+                        .build())
+                .withEmployees(Set.of())
+                .build();
+
+        given(loggedUserGateway.hasRole(RestaurantRoles.VIEW_RESTAURANT_MANAGEMENT)).willReturn(true);
+        given(restaurantGateway.findByIdWithManagement(restaurantId)).willReturn(Optional.of(restaurant));
+        given(loggedUserGateway.requireCurrentUser()).willThrow(new UserNotAuthenticatedException());
+
+        // Act + Assert
+        assertThatThrownBy(() -> useCase.execute(restaurantId))
+                .isInstanceOf(UserNotAuthenticatedException.class);
+
+        then(loggedUserGateway).should().hasRole(RestaurantRoles.VIEW_RESTAURANT_MANAGEMENT);
+        then(restaurantGateway).should().findByIdWithManagement(restaurantId);
+        then(loggedUserGateway).should().requireCurrentUser();
+    }
+
+    @Test
+    @DisplayName("Deve negar quando não tem role necessária (bloqueia antes de IO)")
+    void deveNegar_quandoNaoTemRoleNecessaria() {
+        // Arrange
+        Long restaurantId = 5L;
+        given(loggedUserGateway.hasRole(RestaurantRoles.VIEW_RESTAURANT_MANAGEMENT)).willReturn(false);
+
+        // Act + Assert
+        assertThatThrownBy(() -> useCase.execute(restaurantId))
+                .isInstanceOf(OperationNotAllowedException.class);
+
+        then(loggedUserGateway).should().hasRole(RestaurantRoles.VIEW_RESTAURANT_MANAGEMENT);
+        then(restaurantGateway).shouldHaveNoInteractions();
+        then(loggedUserGateway).should(never()).requireCurrentUser();
+    }
+
+    @Test
+    @DisplayName("Deve lançar BusinessException quando restaurante não for encontrado (cobre lambda do orElseThrow)")
+    void deveLancarBusinessException_quandoRestauranteNaoForEncontrado() {
+        // Arrange
+        Long restaurantId = 6L;
+
+        given(loggedUserGateway.hasRole(RestaurantRoles.VIEW_RESTAURANT_MANAGEMENT)).willReturn(true);
+        given(restaurantGateway.findByIdWithManagement(restaurantId)).willReturn(Optional.empty());
+
+        // Act + Assert
+        Optional<Restaurant> result = useCase.execute(restaurantId);
+
+        assertThat(result).isEmpty();
+
+        then(loggedUserGateway).should().hasRole(RestaurantRoles.VIEW_RESTAURANT_MANAGEMENT);
+        then(restaurantGateway).should().findByIdWithManagement(restaurantId);
+        then(loggedUserGateway).should().requireCurrentUser();
+    }
+
+    @Test
+    @DisplayName("Deve lançar NullPointerException quando input for null (UseCaseBase)")
+    void deveLancarNullPointerException_quandoInputForNull() {
+        // Arrange / Act + Assert
+        assertThatThrownBy(() -> useCase.execute(null))
+                .isInstanceOf(NullPointerException.class)
+                .hasMessageContaining("Input cannot be null");
+
+        then(loggedUserGateway).shouldHaveNoInteractions();
+        then(restaurantGateway).shouldHaveNoInteractions();
+    }
+}

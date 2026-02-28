@@ -1,0 +1,15 @@
+package br.com.fiap.restaurant.iam.core.inbound;
+
+import java.util.Set;
+import java.util.UUID;
+
+public record UpdateRestaurantInput (
+    Long id,
+    String name,
+    AddressInput address,
+    String cuisineType,
+    Set<UpdateOpeningHoursInput> openingHours,
+    Set<UpdateMenuItemInput> menu,
+    Set<UUID> employees,
+    UUID owner
+){}

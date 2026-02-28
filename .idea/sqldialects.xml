@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="SqlDialectMappings">
+    <file url="file://$PROJECT_DIR$/src/main/resources/db/dev/01_roles.sql" dialect="GenericSQL" />
+    <file url="file://$PROJECT_DIR$/src/main/resources/db/dev/02_user_type.sql" dialect="GenericSQL" />
+    <file url="file://$PROJECT_DIR$/src/main/resources/db/dev/04_create_restaurant_employees.sql" dialect="GenericSQL" />
+    <file url="file://$PROJECT_DIR$/src/main/resources/db/migration/V1__CREATE_SCHEMA.sql" dialect="GenericSQL" />
+    <file url="file://$PROJECT_DIR$/src/main/resources/db/migration/V2__INIT_DATA.sql" dialect="GenericSQL" />
+    <file url="file://$PROJECT_DIR$/src/main/resources/db/migration/V3__CREATE_USER_FOR_DEV_ENV.sql" dialect="GenericSQL" />
+    <file url="file://$PROJECT_DIR$/src/test/resources/roles/CLEAR_ROLES.sql" dialect="GenericSQL" />
+    <file url="file://$PROJECT_DIR$/src/test/resources/roles/CREATE_ROLES.sql" dialect="GenericSQL" />
+    <file url="file://$PROJECT_DIR$/src/test/resources/user_type/CLEAR_USER_TYPE.sql" dialect="GenericSQL" />
+    <file url="file://$PROJECT_DIR$/src/test/resources/user_type/CREATE_USER_TYPE.sql" dialect="GenericSQL" />
+  </component>
+</project>

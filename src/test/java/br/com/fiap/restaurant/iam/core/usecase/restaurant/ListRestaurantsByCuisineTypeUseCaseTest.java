@@ -1,0 +1,142 @@
+package br.com.fiap.restaurant.iam.core.usecase.restaurant;
+
+import br.com.fiap.restaurant.iam.core.domain.model.Restaurant;
+import br.com.fiap.restaurant.iam.core.domain.model.util.RestaurantBuilder;
+import br.com.fiap.restaurant.iam.core.domain.pagination.Page;
+import br.com.fiap.restaurant.iam.core.domain.pagination.PagedQuery;
+import br.com.fiap.restaurant.iam.core.domain.roles.ForGettingRoleName;
+import br.com.fiap.restaurant.iam.core.domain.roles.RestaurantRoles;
+import br.com.fiap.restaurant.iam.core.gateway.LoggedUserGateway;
+import br.com.fiap.restaurant.iam.core.gateway.RestaurantGateway;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.lang.reflect.Method;
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
+
+@ExtendWith(MockitoExtension.class)
+@DisplayName("Testes para ListRestaurantsByCuisineTypeUseCase")
+class ListRestaurantsByCuisineTypeUseCaseTest {
+
+    @Mock
+    private RestaurantGateway restaurantGateway;
+
+    @Mock
+    private LoggedUserGateway loggedUserGateway;
+
+    @InjectMocks
+    private ListRestaurantsByCuisineTypeUseCase useCase;
+
+    @Test
+    @DisplayName("Deve retornar página de restaurantes com sucesso")
+    void shouldReturnPageOfRestaurantsSuccessfully() {
+        // Arrange
+        String cuisineType = "Italian";
+        Restaurant restaurant = new RestaurantBuilder()
+                .withDefaults()
+                .withCuisineType(cuisineType)
+                .build();
+
+        int pageNumber = 0;
+        int pageSize = 10;
+        long totalElements = 1L;
+
+        PagedQuery<String> query = new PagedQuery<>(cuisineType, pageNumber, pageSize);
+
+        Page<Restaurant> expectedPage = new Page<>(
+                pageNumber,
+                pageSize,
+                totalElements,
+                List.of(restaurant)
+        );
+
+        given(restaurantGateway.findByCuisineType(query)).willReturn(expectedPage);
+
+        // Act
+        Page<Restaurant> result = useCase.execute(query);
+
+        // Assert
+        assertThat(result).isNotNull();
+        assertThat(result.pageNumber()).isEqualTo(pageNumber);
+        assertThat(result.pageSize()).isEqualTo(pageSize);
+        assertThat(result.totalElements()).isEqualTo(totalElements);
+        assertThat(result.totalPages()).isEqualTo(1);
+        assertThat(result.content()).containsExactly(restaurant);
+
+        // public access: não deve consultar role
+        then(loggedUserGateway).shouldHaveNoInteractions();
+        then(restaurantGateway).should().findByCuisineType(query);
+    }
+
+    @Test
+    @DisplayName("Deve retornar página vazia quando não houver restaurantes")
+    void shouldReturnEmptyPageWhenNoRestaurantsFound() {
+        // Arrange
+        String cuisineType = "NonExistentCuisine";
+
+        int pageNumber = 0;
+        int pageSize = 10;
+        long totalElements = 0L;
+
+        PagedQuery<String> query = new PagedQuery<>(cuisineType, pageNumber, pageSize);
+
+        Page<Restaurant> expectedPage = new Page<>(
+                pageNumber,
+                pageSize,
+                totalElements,
+                List.of()
+        );
+
+        given(restaurantGateway.findByCuisineType(query)).willReturn(expectedPage);
+
+        // Act
+        Page<Restaurant> result = useCase.execute(query);
+
+        // Assert
+        assertThat(result).isNotNull();
+        assertThat(result.pageNumber()).isEqualTo(pageNumber);
+        assertThat(result.pageSize()).isEqualTo(pageSize);
+        assertThat(result.totalElements()).isZero();
+        assertThat(result.totalPages()).isZero(); // totalElements=0 => totalPages=0
+        assertThat(result.content()).isEmpty();
+
+        // public access: não deve consultar role
+        then(loggedUserGateway).shouldHaveNoInteractions();
+        then(restaurantGateway).should().findByCuisineType(query);
+    }
+
+    @Test
+    @DisplayName("Deve lançar NullPointerException quando a consulta for nula (validação do UseCaseBase)")
+    void shouldThrowExceptionWhenQueryIsNull() {
+        // Act / Assert
+        assertThatThrownBy(() -> useCase.execute(null))
+                .isInstanceOf(NullPointerException.class)
+                .hasMessage("Input cannot be null.");
+
+        then(restaurantGateway).shouldHaveNoInteractions();
+        then(loggedUserGateway).shouldHaveNoInteractions();
+    }
+
+    @Test
+    @DisplayName("Deve retornar a role requerida correta (cobre getRequiredRole mesmo com acesso público)")
+    void shouldReturnRequiredRoleCorrectly() throws Exception {
+        // Arrange
+        Method method = ListRestaurantsByCuisineTypeUseCase.class.getDeclaredMethod("getRequiredRole");
+        method.setAccessible(true);
+
+        // Act
+        ForGettingRoleName role = (ForGettingRoleName) method.invoke(useCase);
+
+        // Assert
+        assertThat(role).isEqualTo(RestaurantRoles.VIEW_RESTAURANT);
+    }
+}

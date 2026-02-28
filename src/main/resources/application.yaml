@@ -1,0 +1,27 @@
+spring:
+  application:
+    name: restaurant-cleanarch
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: false
+    table: history_flyway
+  jpa:
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+server:
+  port: 8080
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+  default-produces-media-type: application/json
+  default-consumes-media-type: application/json
+
+
+
+

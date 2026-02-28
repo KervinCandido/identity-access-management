@@ -1,0 +1,40 @@
+package br.com.fiap.restaurant.iam.core.gateway;
+
+import br.com.fiap.restaurant.iam.core.domain.model.Restaurant;
+import br.com.fiap.restaurant.iam.core.domain.pagination.Page;
+import br.com.fiap.restaurant.iam.core.domain.pagination.PagedQuery;
+
+import java.util.List;
+import java.util.Optional;
+
+public interface RestaurantGateway {
+
+    Restaurant save(Restaurant restaurant);
+
+    Optional<Restaurant> findById(Long id);
+
+    // para management view
+    Optional<Restaurant> findByIdWithManagement(Long id);
+
+    /**
+     * Verifica se já existe um restaurante com o mesmo nome
+     * (útil para evitar duplicidade no cadastro)
+     */
+    boolean existsRestaurantWithName(String name);
+
+    /**
+     * Verifica se já existe um restaurante com o mesmo nome, exceto o próprio (para update)
+     */
+    boolean existsRestaurantWithNameExcludingId(String name, Long excludingId);
+
+    // ⚠️ ideal: substituir por paginado, mantido por compatibilidade
+    List<Restaurant> findAll();
+
+    // ⚠️ NOVO: público paginado (2 passos)
+    Page<Restaurant> findAll(PagedQuery<Void> query);
+
+
+    void delete(Long id);
+
+    Page<Restaurant> findByCuisineType(PagedQuery<String> query);
+}

@@ -1,0 +1,208 @@
+package br.com.fiap.restaurant.iam.core.domain.model.util;
+
+import br.com.fiap.restaurant.iam.core.domain.model.Role;
+import br.com.fiap.restaurant.iam.core.domain.model.User;
+import br.com.fiap.restaurant.iam.core.domain.model.UserType;
+import br.com.fiap.restaurant.iam.core.domain.model.valueobject.Address;
+import br.com.fiap.restaurant.iam.core.domain.roles.ForGettingRoleName;
+import br.com.fiap.restaurant.iam.core.inbound.AddressInput;
+import br.com.fiap.restaurant.iam.core.inbound.CreateUserInput;
+import br.com.fiap.restaurant.iam.core.inbound.UpdateUserInput;
+import br.com.fiap.restaurant.iam.core.outbound.UserSummaryOutput;
+import br.com.fiap.restaurant.iam.infra.persistence.entity.AddressEmbeddableEntity;
+import br.com.fiap.restaurant.iam.infra.persistence.entity.RoleEntity;
+import br.com.fiap.restaurant.iam.infra.persistence.entity.UserEntity;
+import br.com.fiap.restaurant.iam.infra.persistence.entity.UserTypeEntity;
+
+import java.util.HashSet;
+import java.util.Random;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+public class UserBuilder {
+
+    private static final String DEFAULT_ROLE = "USER";
+
+    private UUID id;
+    private String name;
+    private String username;
+    private String email;
+    private Address address;
+    private AddressInput addressInput;
+
+    private Long userTypeId;
+    private String userTypeName;
+
+    private final Set<Role> roles = new HashSet<>();
+    private String passwordHash;
+
+    private final Random random = new Random();
+
+    public UserBuilder() {
+        withDefaults();
+    }
+
+    public UserBuilder withDefaults() {
+        this.id = UUID.randomUUID();
+        this.name = "João Silva";
+        this.username = "joao.silva";
+        this.email = "joao@example.com";
+        var addressBuilder = new AddressBuilder();
+        this.address = addressBuilder.build();
+        this.addressInput = addressBuilder.buildInput();
+        this.userTypeId = 1L;
+        this.userTypeName = "Usuário";
+
+        this.roles.clear();
+        this.passwordHash = "HASHED_DEFAULT";
+        return this;
+    }
+
+    public UserBuilder copy() {
+        var b = new UserBuilder().withDefaults();
+        b.id = this.id;
+        b.name = this.name;
+        b.username = this.username;
+        b.email = this.email;
+        b.address = this.address;
+        b.userTypeId = this.userTypeId;
+        b.userTypeName = this.userTypeName;
+        b.passwordHash = this.passwordHash;
+
+        b.roles.clear();
+        b.roles.addAll(this.roles);
+        return b;
+    }
+
+    public UserBuilder withRole(ForGettingRoleName roleName) {
+        this.roles.add(new Role(null, roleName.getRoleName()));
+        return this;
+    }
+
+    public UserBuilder withRoles(Set<Role> roles) {
+        this.roles.clear();
+        if (roles != null) this.roles.addAll(roles);
+        return this;
+    }
+
+    public UserBuilder withoutRoles() {
+        this.roles.clear();
+        return this;
+    }
+
+    public UserBuilder withoutId() {
+        this.id = null;
+        return this;
+    }
+
+    public UserBuilder withId(UUID id) {
+        this.id = id;
+        return this;
+    }
+
+    public UserBuilder withName(String name) {
+        this.name = name;
+        return this;
+    }
+
+    public UserBuilder withEmail(String email) {
+        this.email = email;
+        return this;
+    }
+
+    public UserBuilder withAddress(Address address) {
+        this.address = address;
+        return this;
+    }
+
+    public UserBuilder withUserTypeMeta(Long id, String name) {
+        this.userTypeId = id;
+        this.userTypeName = name;
+        return this;
+    }
+
+    public UserBuilder withUserType(UserType userType) {
+        if (userType == null) {
+            this.userTypeId = 1L;
+            this.userTypeName = "Usuário";
+            this.roles.clear();
+            return this;
+        }
+
+        this.userTypeId = userType.getId();
+        this.userTypeName = userType.getName();
+
+        this.roles.clear();
+        if (userType.getRoles() != null) this.roles.addAll(userType.getRoles());
+        return this;
+    }
+
+    public UserBuilder withPasswordHash(String passwordHash) {
+        this.passwordHash = passwordHash;
+        return this;
+    }
+
+    public User build() {
+        Set<Role> rolesCopy = new HashSet<>(roles);
+        if (rolesCopy.isEmpty()) {
+            rolesCopy.add(new Role(null, DEFAULT_ROLE));
+        }
+        UserType type = new UserType(userTypeId, userTypeName, rolesCopy);
+        return new User(id, name, username + random.nextInt(1000), email, address, type, passwordHash);
+    }
+
+    public UserSummaryOutput buildSummaryOutput() {
+        return new UserSummaryOutput(id, name);
+    }
+
+    public UserEntity buildEntity() {
+        var addressEntity = new AddressEmbeddableEntity();
+        addressEntity.setStreet(address.getStreet());
+        addressEntity.setCity(address.getCity());
+        addressEntity.setNumber(address.getNumber());
+        addressEntity.setState(address.getState());
+        addressEntity.setZipCode(address.getZipCode());
+        addressEntity.setComplement(address.getComplement());
+
+        Set<RoleEntity> rolesEntity = roles.stream().map(r -> {
+            RoleEntity roleEntity = new RoleEntity();
+            roleEntity.setId(r.id());
+            roleEntity.setName(r.name());
+            return roleEntity;
+        }).collect(Collectors.toSet());
+
+        var entity = new UserEntity();
+        entity.setId(id);
+        entity.setName(name);
+        entity.setUsername(username + random.nextInt(1000));
+        entity.setEmail(email);
+        entity.setPasswordHash(passwordHash);
+        entity.setAddress(addressEntity);
+
+        entity.setUserType(new UserTypeEntity(userTypeId, userTypeName, rolesEntity));
+        return entity;
+    }
+
+    public CreateUserInput buildInput() {
+        return new CreateUserInput(
+                name,
+                username + random.nextInt(1000),
+                email,
+                passwordHash,
+                addressInput,
+                userTypeId
+        );
+    }
+
+    public UpdateUserInput buildUpdateInput() {
+        return new UpdateUserInput(
+                id,
+                username + random.nextInt(1000),
+                name,
+                email,
+                addressInput,
+                userTypeId
+        );
+    }
+}
