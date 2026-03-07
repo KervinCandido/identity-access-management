@@ -10,6 +10,8 @@ import org.springframework.security.oauth2.jwt.*;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -76,5 +78,10 @@ public class JwtService {
     public String getUserId(String token) {
         Jwt jwt = jwtDecoder.decode(token);
         return jwt.getSubject();
+    }
+
+    public Collection<GrantedAuthority> getAuthorities(String token) {
+        Jwt jwt = jwtDecoder.decode(token);
+        return Arrays.stream(jwt.getClaimAsString("roles").split("\\s")).map(SimpleGrantedAuthority::new).collect(Collectors.toSet());
     }
 }
