@@ -61,9 +61,9 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
 
     private void authenticateUser(String token) {
         var userId = UUID.fromString(jwtService.getUserId(token));
-        var user = userRepository.findById(userId).orElseThrow(InvalidCredentialsException::new);
+        var authorities = jwtService.getAuthorities(token);
 
         SecurityContextHolder.getContext()
-                .setAuthentication(new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities()));
+                .setAuthentication(new UsernamePasswordAuthenticationToken(userId, null, authorities));
     }
 }
