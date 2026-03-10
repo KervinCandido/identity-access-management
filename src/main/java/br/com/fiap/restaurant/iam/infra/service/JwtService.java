@@ -2,7 +2,7 @@ package br.com.fiap.restaurant.iam.infra.service;
 
 import br.com.fiap.restaurant.iam.core.exception.InvalidCredentialsException;
 import br.com.fiap.restaurant.iam.infra.persistence.entity.UserEntity;
-import br.com.fiap.restaurant.iam.infra.vo.JwtBearerToken;
+import br.com.fiap.restaurant.iam.infra.dto.JwtBearerToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
