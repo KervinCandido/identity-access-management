@@ -3,7 +3,7 @@ package br.com.fiap.restaurant.iam.infra.service;
 import br.com.fiap.restaurant.iam.core.exception.InvalidCredentialsException;
 import br.com.fiap.restaurant.iam.infra.controller.request.AuthRequest;
 import br.com.fiap.restaurant.iam.infra.persistence.repository.UserRepository;
-import br.com.fiap.restaurant.iam.infra.vo.JwtBearerToken;
+import br.com.fiap.restaurant.iam.infra.dto.JwtBearerToken;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;

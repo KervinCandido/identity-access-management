@@ -1,6 +1,5 @@
 package br.com.fiap.restaurant.iam.infra.config;
 
-import br.com.fiap.restaurant.iam.core.exception.InvalidCredentialsException;
 import br.com.fiap.restaurant.iam.infra.persistence.repository.UserRepository;
 import br.com.fiap.restaurant.iam.infra.service.JwtService;
 import jakarta.servlet.FilterChain;
@@ -62,8 +61,9 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
     private void authenticateUser(String token) {
         var userId = UUID.fromString(jwtService.getUserId(token));
         var authorities = jwtService.getAuthorities(token);
+        var user = userRepository.findById(userId);
 
         SecurityContextHolder.getContext()
-                .setAuthentication(new UsernamePasswordAuthenticationToken(userId, null, authorities));
+                .setAuthentication(new UsernamePasswordAuthenticationToken(user, null, authorities));
     }
 }
