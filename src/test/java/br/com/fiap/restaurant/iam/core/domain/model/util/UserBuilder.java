@@ -15,7 +15,6 @@ import br.com.fiap.restaurant.iam.infra.persistence.entity.UserEntity;
 import br.com.fiap.restaurant.iam.infra.persistence.entity.UserTypeEntity;
 
 import java.util.HashSet;
-import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -36,8 +35,6 @@ public class UserBuilder {
 
     private final Set<Role> roles = new HashSet<>();
     private String passwordHash;
-
-    private final Random random = new Random();
 
     public UserBuilder() {
         withDefaults();
@@ -73,6 +70,11 @@ public class UserBuilder {
         b.roles.clear();
         b.roles.addAll(this.roles);
         return b;
+    }
+
+    public UserBuilder withUsername(String userName) {
+        this.username = userName;
+        return this;
     }
 
     public UserBuilder withRole(ForGettingRoleName roleName) {
@@ -149,7 +151,7 @@ public class UserBuilder {
             rolesCopy.add(new Role(null, DEFAULT_ROLE));
         }
         UserType type = new UserType(userTypeId, userTypeName, rolesCopy);
-        return new User(id, name, username + random.nextInt(1000), email, address, type, passwordHash);
+        return new User(id, name, username, email, address, type, passwordHash);
     }
 
     public UserSummaryOutput buildSummaryOutput() {
@@ -175,7 +177,7 @@ public class UserBuilder {
         var entity = new UserEntity();
         entity.setId(id);
         entity.setName(name);
-        entity.setUsername(username + random.nextInt(1000));
+        entity.setUsername(username);
         entity.setEmail(email);
         entity.setPasswordHash(passwordHash);
         entity.setAddress(addressEntity);
@@ -187,7 +189,7 @@ public class UserBuilder {
     public CreateUserInput buildInput() {
         return new CreateUserInput(
                 name,
-                username + random.nextInt(1000),
+                username,
                 email,
                 passwordHash,
                 addressInput,
@@ -198,7 +200,7 @@ public class UserBuilder {
     public UpdateUserInput buildUpdateInput() {
         return new UpdateUserInput(
                 id,
-                username + random.nextInt(1000),
+                username,
                 name,
                 email,
                 addressInput,

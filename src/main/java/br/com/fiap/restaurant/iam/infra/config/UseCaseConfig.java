@@ -4,6 +4,10 @@ import br.com.fiap.restaurant.iam.core.gateway.*;
 import br.com.fiap.restaurant.iam.core.usecase.role.ListRolesUseCase;
 import br.com.fiap.restaurant.iam.core.usecase.user.*;
 import br.com.fiap.restaurant.iam.core.usecase.usertype.*;
+import br.com.fiap.restaurant.iam.infra.publisher.CreateUserEventPublisher;
+import br.com.fiap.restaurant.iam.infra.publisher.DeleteUserEventPublisher;
+import br.com.fiap.restaurant.iam.infra.publisher.UpdateUserEventPublisher;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -68,13 +72,15 @@ public class UseCaseConfig {
             UserGateway userGateway,
             UserTypeGateway userTypeGateway,
             LoggedUserGateway loggedUserGateway,
-            PasswordHasherGateway passwordHasherGateway
+            PasswordHasherGateway passwordHasherGateway,
+            RabbitTemplate rabbitTemplate
     ) {
         return new CreateUserUseCase(
-                userGateway,
-                userTypeGateway,
-                loggedUserGateway,
-                passwordHasherGateway
+            userGateway,
+            userTypeGateway,
+            loggedUserGateway,
+            passwordHasherGateway,
+            new CreateUserEventPublisher(rabbitTemplate)
         );
     }
 
@@ -82,17 +88,19 @@ public class UseCaseConfig {
     public UpdateUserUseCase updateUserUseCase(
             UserGateway userGateway,
             UserTypeGateway userTypeGateway,
-            LoggedUserGateway loggedUserGateway
+            LoggedUserGateway loggedUserGateway,
+            RabbitTemplate rabbitTemplate
     ) {
-        return new UpdateUserUseCase(userGateway, userTypeGateway, loggedUserGateway);
+        return new UpdateUserUseCase(userGateway, userTypeGateway, loggedUserGateway, new UpdateUserEventPublisher(rabbitTemplate));
     }
 
     @Bean
     public DeleteUserUseCase deleteUserUseCase(
             UserGateway userGateway,
-            LoggedUserGateway loggedUserGateway
+            LoggedUserGateway loggedUserGateway,
+            RabbitTemplate rabbitTemplate
     ) {
-        return new DeleteUserUseCase(userGateway, loggedUserGateway);
+        return new DeleteUserUseCase(userGateway, loggedUserGateway, new DeleteUserEventPublisher(rabbitTemplate));
     }
 
     @Bean

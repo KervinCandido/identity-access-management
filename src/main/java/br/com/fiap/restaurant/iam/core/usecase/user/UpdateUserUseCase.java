@@ -2,39 +2,40 @@ package br.com.fiap.restaurant.iam.core.usecase.user;
 
 import br.com.fiap.restaurant.iam.core.domain.model.User;
 import br.com.fiap.restaurant.iam.core.domain.model.valueobject.Address;
-import br.com.fiap.restaurant.iam.core.domain.roles.ForGettingRoleName;
 import br.com.fiap.restaurant.iam.core.domain.roles.UserManagementRoles;
 import br.com.fiap.restaurant.iam.core.exception.BusinessException;
+import br.com.fiap.restaurant.iam.core.exception.OperationNotAllowedException;
 import br.com.fiap.restaurant.iam.core.exception.ResourceNotFoundException;
+import br.com.fiap.restaurant.iam.core.gateway.EventPublisher;
 import br.com.fiap.restaurant.iam.core.gateway.LoggedUserGateway;
 import br.com.fiap.restaurant.iam.core.gateway.UserGateway;
 import br.com.fiap.restaurant.iam.core.gateway.UserTypeGateway;
 import br.com.fiap.restaurant.iam.core.inbound.UpdateUserInput;
-import br.com.fiap.restaurant.iam.core.usecase.UseCaseWithoutOutput;
 
 import java.util.Objects;
 import java.util.UUID;
 
-public class UpdateUserUseCase extends UseCaseWithoutOutput<UpdateUserInput> {
+public class UpdateUserUseCase {
 
+    private final LoggedUserGateway loggedUserGateway;
     private final UserGateway userGateway;
     private final UserTypeGateway userTypeGateway;
+    private final EventPublisher<User> updateUserEventPublisher;
 
-    public UpdateUserUseCase(UserGateway userGateway, UserTypeGateway userTypeGateway, LoggedUserGateway loggedUserGateway) {
-        super(loggedUserGateway);
-        Objects.requireNonNull(userGateway, "userGateway must not be null");
-        Objects.requireNonNull(userTypeGateway, "userTypeGateway must not be null");
-        this.userGateway = userGateway;
-        this.userTypeGateway = userTypeGateway;
+    public UpdateUserUseCase(UserGateway userGateway, UserTypeGateway userTypeGateway, LoggedUserGateway loggedUserGateway, EventPublisher<User> updateUserEventPublisher) {
+        this.loggedUserGateway = Objects.requireNonNull(loggedUserGateway, "loggedUserGateway cannot be null");
+        this.userGateway = Objects.requireNonNull(userGateway, "userGateway cannot be null");
+        this.userTypeGateway = Objects.requireNonNull(userTypeGateway, "userTypeGateway cannot be null");
+        this.updateUserEventPublisher = Objects.requireNonNull(updateUserEventPublisher, "updateUserEventPublisher cannot be null");
     }
 
-    @Override
-    protected ForGettingRoleName getRequiredRole() {
-        return UserManagementRoles.UPDATE_USER;
-    }
+    public void execute(UpdateUserInput input) {
+        Objects.requireNonNull(input,  "UpdateUserInput cannot be null.");
+        boolean isAllowed = loggedUserGateway.hasRole(UserManagementRoles.UPDATE_USER);
 
-    @Override
-    public void doExecute(UpdateUserInput input) {
+        if (!isAllowed)
+            throw new OperationNotAllowedException("The current user does not have permission to perform this action.");
+
         UUID id = Objects.requireNonNull(input.id(), "User UUID cannot be null.");
         User currentUser = userGateway.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User with ID " + id + " not found."));
@@ -51,6 +52,10 @@ public class UpdateUserUseCase extends UseCaseWithoutOutput<UpdateUserInput> {
         if (!currentUser.getEmail().equalsIgnoreCase(newEmail)
             && userGateway.existsUserWithEmail(newEmail)) {
             throw new BusinessException("Email " + newEmail + " is already in use.");
+        }
+
+        if (!currentUser.getUsername().equals(newUsername) && userGateway.existsUserWithUserName(newUsername)) {
+            throw new BusinessException("UserName is already in use.");
         }
 
         Address newAddress = currentUser.getAddress();
@@ -81,7 +86,8 @@ public class UpdateUserUseCase extends UseCaseWithoutOutput<UpdateUserInput> {
                 currentUser.getPasswordHash()   // senha não é alterada aqui (fluxo separado para isso)
         );
 
-        userGateway.save(updatedUser);
+        User savedUser = userGateway.save(updatedUser);
+        updateUserEventPublisher.publish(savedUser);
     }
 
 }

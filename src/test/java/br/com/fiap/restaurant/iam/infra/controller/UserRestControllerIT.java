@@ -182,7 +182,11 @@ class UserRestControllerIT {
     @DisplayName("Deve retornar erro ao tentar alterar o email para um em uso")
     void deveDarErroAoAlterarUsuarioParaEmailEmUso() throws Exception {
         String inUseEmail = "in.use@mail.com";
-        UserEntity userEntity = new UserBuilder().withEmail(inUseEmail).withoutId().buildEntity();
+        UserEntity userEntity = new UserBuilder()
+                .withEmail(inUseEmail)
+                .withoutId()
+                .withUsername("user@2026")
+                .buildEntity();
         userRepository.save(userEntity);
 
         var userTypeId = 1L;

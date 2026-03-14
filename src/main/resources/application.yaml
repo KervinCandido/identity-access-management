@@ -12,6 +12,12 @@ spring:
       hibernate:
         jdbc:
           time_zone: UTC
+  rabbitmq:
+    host: ${MQ_HOST:localhost}
+    port: ${MQ_PORT:5672}
+    username: ${MQ_USER:restaurant-mq}
+    password: ${MQ_PASSWORD:password-mq}
+    listener.simple.acknowledge-mode: manual
 server:
   port: 8080
 springdoc:
