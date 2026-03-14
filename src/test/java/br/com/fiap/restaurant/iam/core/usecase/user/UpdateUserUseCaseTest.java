@@ -10,6 +10,7 @@ import br.com.fiap.restaurant.iam.core.domain.roles.UserManagementRoles;
 import br.com.fiap.restaurant.iam.core.exception.BusinessException;
 import br.com.fiap.restaurant.iam.core.exception.OperationNotAllowedException;
 import br.com.fiap.restaurant.iam.core.exception.ResourceNotFoundException;
+import br.com.fiap.restaurant.iam.core.gateway.EventPublisher;
 import br.com.fiap.restaurant.iam.core.gateway.LoggedUserGateway;
 import br.com.fiap.restaurant.iam.core.gateway.UserGateway;
 import br.com.fiap.restaurant.iam.core.gateway.UserTypeGateway;
@@ -33,9 +34,17 @@ import static org.mockito.BDDMockito.*;
 @DisplayName("Testes para UpdateUserUseCase")
 class UpdateUserUseCaseTest {
 
-    @Mock private UserGateway userGateway;
-    @Mock private UserTypeGateway userTypeGateway;
-    @Mock private LoggedUserGateway loggedUserGateway;
+    @Mock
+    private UserGateway userGateway;
+
+    @Mock
+    private UserTypeGateway userTypeGateway;
+
+    @Mock
+    private LoggedUserGateway loggedUserGateway;
+
+    @Mock
+    private EventPublisher<User> updateUserEventPublisher;
 
     @InjectMocks
     private UpdateUserUseCase updateUserUseCase;
@@ -44,8 +53,8 @@ class UpdateUserUseCaseTest {
     private ArgumentCaptor<User> userCaptor;
 
     @Test
-    @DisplayName("Deve atualizar nome, email, address e userType quando input fornecer novos valores")
-    void shouldUpdateUserSuccessfully() {
+    @DisplayName("Deve atualizar nome, email, endereço e tipo de usuario com sucesso")
+    void deveAtualizaNomeEmailEnderecoTipoDeUsuarioComSucesso() {
         // Arrange
         UUID userId = UUID.randomUUID();
 
@@ -64,10 +73,13 @@ class UpdateUserUseCaseTest {
                 .withRoleNames(java.util.Set.of("VIEW_MENU_ITEM"))
                 .build();
 
+        String oldusername = "oldusername";
         User currentUser = new UserBuilder()
                 .withId(userId)
                 .withName("Nome Antigo")
                 .withEmail("old@teste.com")
+                .withUsername("old.username")
+                .withUsername(oldusername)
                 .withAddress(currentAddress)
                 .withUserType(currentType)
                 .withPasswordHash("HASHED_OLD")
@@ -92,8 +104,7 @@ class UpdateUserUseCaseTest {
         var input = new UpdateUserInput(
                 userId,
                 "  Maria Oliveira  ",
-                "maria.oliveira",
-
+                "   maria.oliveira  ",
                 "  maria@teste.com  ",
                 newAddressInput,
                 newUserTypeId
@@ -102,6 +113,7 @@ class UpdateUserUseCaseTest {
         given(loggedUserGateway.hasRole(UserManagementRoles.UPDATE_USER)).willReturn(true);
         given(userGateway.findById(userId)).willReturn(Optional.of(currentUser));
         given(userGateway.existsUserWithEmail("maria@teste.com")).willReturn(false);
+        given(userGateway.existsUserWithUserName("maria.oliveira")).willReturn(false);
         given(userTypeGateway.findById(newUserTypeId)).willReturn(Optional.of(newUserType));
         given(userGateway.save(any(User.class))).willAnswer(inv -> inv.getArgument(0));
 
@@ -130,12 +142,14 @@ class UpdateUserUseCaseTest {
         then(loggedUserGateway).should().hasRole(UserManagementRoles.UPDATE_USER);
         then(userGateway).should().findById(userId);
         then(userGateway).should().existsUserWithEmail("maria@teste.com");
+        then(userGateway).should().existsUserWithUserName("maria.oliveira");
         then(userTypeGateway).should().findById(newUserTypeId);
+        then(updateUserEventPublisher).should().publish(userCaptor.getValue());
     }
 
     @Test
-    @DisplayName("Deve manter nome/email/address/userType quando input vier com campos nulos e não alterar email")
-    void shouldKeepCurrentValuesWhenInputFieldsAreNull() {
+    @DisplayName("Não deve alterar nome/email/address/userType quando input vier com campos nulos")
+    void naoDeveAlterarCamposQuandoEstiveremNulosNoInput() {
         // Arrange
         UUID userId = UUID.randomUUID();
 
@@ -184,13 +198,16 @@ class UpdateUserUseCaseTest {
         assertThat(saved.getPasswordHash()).isEqualTo("HASHED");
 
         // Não chama existsUserWithEmail porque email não mudou
+        then(loggedUserGateway).should().hasRole(UserManagementRoles.UPDATE_USER);
         then(userGateway).should(never()).existsUserWithEmail(any());
+        then(userGateway).should(never()).existsUserWithUserName(any());
         then(userTypeGateway).should(never()).findById(any());
+        then(updateUserEventPublisher).should().publish(userCaptor.getValue());
     }
 
     @Test
-    @DisplayName("Deve lançar NullPointerException quando input.id for nulo")
-    void shouldThrowWhenIdIsNull() {
+    @DisplayName("Deve lançar NullPointerException quando o id do usuário for nulo")
+    void deveLancarNullPointerQuandoIdDoUsuarioForNulo() {
         // Arrange
         var input = new UpdateUserInput(
                 null,
@@ -208,13 +225,15 @@ class UpdateUserUseCaseTest {
                 .isInstanceOf(NullPointerException.class)
                 .hasMessage("User UUID cannot be null.");
 
-        then(userGateway).should(never()).findById(any());
-        then(userGateway).should(never()).save(any());
+        then(loggedUserGateway).should().hasRole(UserManagementRoles.UPDATE_USER);
+        then(userGateway).shouldHaveNoInteractions();
+        then(userTypeGateway).shouldHaveNoInteractions();
+        then(updateUserEventPublisher).shouldHaveNoInteractions();
     }
 
     @Test
     @DisplayName("Deve lançar ResourceNotFoundException quando usuário não existir")
-    void shouldThrowWhenUserNotFound() {
+    void deveLancarResourceNotFoundQuandoUsuarioNaoExistir() {
         // Arrange
         UUID userId = UUID.randomUUID();
         var input = new UpdateUserInput(userId, "Maria", "maria.oliveira", "maria@teste.com", null, null);
@@ -227,12 +246,16 @@ class UpdateUserUseCaseTest {
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessage("User with ID " + userId + " not found.");
 
-        then(userGateway).should(never()).save(any());
+        then(loggedUserGateway).should().hasRole(UserManagementRoles.UPDATE_USER);
+        then(userGateway).should().findById(userId);
+        then(userGateway).shouldHaveNoMoreInteractions();
+        then(userTypeGateway).shouldHaveNoInteractions();
+        then(updateUserEventPublisher).shouldHaveNoInteractions();
     }
 
     @Test
-    @DisplayName("Deve lançar BusinessException quando newEmail ficar blank (input.email em branco)")
-    void shouldThrowWhenEmailBlank() {
+    @DisplayName("Deve lançar BusinessException quando novo endereço Email for vazio")
+    void deveLancarBusinessExceptionQuandoNovoEnderecoEmailForVazio() {
         // Arrange
         UUID userId = UUID.randomUUID();
 
@@ -251,13 +274,16 @@ class UpdateUserUseCaseTest {
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("Email cannot be blank.");
 
-        then(userGateway).should(never()).save(any());
-        then(userGateway).should(never()).existsUserWithEmail(any());
+        then(loggedUserGateway).should().hasRole(UserManagementRoles.UPDATE_USER);
+        then(userGateway).should().findById(userId);
+        then(userGateway).shouldHaveNoMoreInteractions();
+        then(userTypeGateway).shouldHaveNoInteractions();
+        then(updateUserEventPublisher).shouldHaveNoInteractions();
     }
 
     @Test
-    @DisplayName("Deve lançar BusinessException quando email mudar e já estiver em uso")
-    void shouldThrowWhenEmailChangedAndAlreadyInUse() {
+    @DisplayName("Deve lançar BusinessException quando novo endeço email já estiver em uso")
+    void deveLancarBusinessExceptionQuandoNovoEnderecoDeEmailJaEstiverEmUso() {
         // Arrange
         UUID userId = UUID.randomUUID();
 
@@ -266,23 +292,29 @@ class UpdateUserUseCaseTest {
                 .withEmail("old@teste.com")
                 .build();
 
-        var input = new UpdateUserInput(userId, null, "maria.oliveira","new@teste.com", null, null);
+        String newEmailAddress = "new@teste.com";
+        var input = new UpdateUserInput(userId, null, "maria.oliveira", newEmailAddress, null, null);
 
         given(loggedUserGateway.hasRole(UserManagementRoles.UPDATE_USER)).willReturn(true);
         given(userGateway.findById(userId)).willReturn(Optional.of(currentUser));
-        given(userGateway.existsUserWithEmail("new@teste.com")).willReturn(true);
+        given(userGateway.existsUserWithEmail(newEmailAddress)).willReturn(true);
 
         // Act + Assert
         assertThatThrownBy(() -> updateUserUseCase.execute(input))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("Email new@teste.com is already in use.");
 
-        then(userGateway).should(never()).save(any());
+        then(loggedUserGateway).should().hasRole(UserManagementRoles.UPDATE_USER);
+        then(userGateway).should().findById(userId);
+        then(userGateway).should().existsUserWithEmail(newEmailAddress);
+        then(userGateway).shouldHaveNoMoreInteractions();
+        then(userTypeGateway).shouldHaveNoInteractions();
+        then(updateUserEventPublisher).shouldHaveNoInteractions();
     }
 
     @Test
-    @DisplayName("Deve lançar BusinessException quando userTypeId mudar e não existir")
-    void shouldThrowWhenUserTypeNotFound() {
+    @DisplayName("Deve lançar BusinessException quando novo tipo de usuário não existir")
+    void deveLancarBusinessExceptionQuandoNovoTipoDeUsuarioNaoExistir() {
         // Arrange
         UUID userId = UUID.randomUUID();
 
@@ -309,12 +341,17 @@ class UpdateUserUseCaseTest {
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("User type with ID " + newUserTypeId + " not found.");
 
-        then(userGateway).should(never()).save(any());
+        then(loggedUserGateway).should().hasRole(UserManagementRoles.UPDATE_USER);
+        then(userGateway).should().findById(userId);
+        then(userGateway).shouldHaveNoMoreInteractions();
+        then(userTypeGateway).should().findById(newUserTypeId);
+        then(userGateway).shouldHaveNoMoreInteractions();
+        then(updateUserEventPublisher).shouldHaveNoInteractions();
     }
 
     @Test
     @DisplayName("Deve lançar OperationNotAllowedException quando usuário logado não tiver permissão")
-    void shouldThrowWhenNoPermission() {
+    void deveLancarOperationNotAllowedQuandoUsuarioLogadoNaoTiverPermissao() {
         // Arrange
         var input = new UpdateUserInput(UUID.randomUUID(), "Maria", "maria.oliveira","maria@teste.com", null, null);
         given(loggedUserGateway.hasRole(UserManagementRoles.UPDATE_USER)).willReturn(false);
@@ -323,26 +360,35 @@ class UpdateUserUseCaseTest {
         assertThatThrownBy(() -> updateUserUseCase.execute(input))
                 .isInstanceOf(OperationNotAllowedException.class);
 
-        then(userGateway).should(never()).findById(any());
-        then(userGateway).should(never()).save(any());
-        then(userTypeGateway).should(never()).findById(any());
+        then(loggedUserGateway).should().hasRole(UserManagementRoles.UPDATE_USER);
+        then(userGateway).shouldHaveNoInteractions();
+        then(userTypeGateway).shouldHaveNoInteractions();
+        then(updateUserEventPublisher).shouldHaveNoInteractions();
     }
 
     @Test
-    @DisplayName("Construtor deve lançar NullPointerException quando loggedUserGateway for nulo")
-    void constructorShouldThrowWhenLoggedUserGatewayIsNull() {
+    @DisplayName("Construtor deve lançar NullPointerException se receber nulo em algum campo")
+    void construtorDeveLancarNullPointerSeReceberNuloEmAlgumCampo() {
         // Arrange
-        LoggedUserGateway nullLoggedUserGateway = null;
 
         // Act + Assert
-        assertThatThrownBy(() -> new UpdateUserUseCase(userGateway, userTypeGateway, nullLoggedUserGateway))
+        assertThatThrownBy(() -> new UpdateUserUseCase(null, userTypeGateway, loggedUserGateway, updateUserEventPublisher))
                 .isInstanceOf(NullPointerException.class)
-                .hasMessage("LoggedUserGateway cannot be null.");
+                .hasMessageContaining("userGateway cannot be null");
+        assertThatThrownBy(() -> new UpdateUserUseCase(userGateway, null, loggedUserGateway, updateUserEventPublisher))
+                .isInstanceOf(NullPointerException.class)
+                .hasMessageContaining("userTypeGateway cannot be null");
+        assertThatThrownBy(() -> new UpdateUserUseCase(userGateway, userTypeGateway, null, updateUserEventPublisher))
+                .isInstanceOf(NullPointerException.class)
+                .hasMessageContaining("loggedUserGateway cannot be null");
+        assertThatThrownBy(() -> new UpdateUserUseCase(userGateway, userTypeGateway, loggedUserGateway, null))
+                .isInstanceOf(NullPointerException.class)
+                .hasMessageContaining("updateUserEventPublisher cannot be null");
     }
 
     @Test
     @DisplayName("Não deve buscar UserType quando input.userTypeId for igual ao userType atual")
-    void shouldNotFetchUserTypeWhenUserTypeIdIsSameAsCurrent() {
+    void naoDeveBuscarTipoDeUsuarioQuandoInputUserTypeIdForIgualAoAtual() {
         // Arrange
         UUID userId = UUID.randomUUID();
 
@@ -357,6 +403,7 @@ class UpdateUserUseCaseTest {
                 .withId(userId)
                 .withUserType(currentType)
                 .withEmail("atual@teste.com")
+                .withUsername("maria.oliveira")
                 .build();
 
         var input = new UpdateUserInput(
@@ -383,9 +430,26 @@ class UpdateUserUseCaseTest {
         assertThat(saved.getName()).isEqualTo("Novo Nome");
         assertThat(saved.getEmail()).isEqualTo("atual@teste.com");
 
-        then(userTypeGateway).should(never()).findById(any());
-        then(userGateway).should(never()).existsUserWithEmail(any()); // email não mudou
+        then(loggedUserGateway).should().hasRole(UserManagementRoles.UPDATE_USER);
+        then(userGateway).should().findById(userId);
+        then(userGateway).should(never()).existsUserWithEmail(anyString());
+        then(userGateway).should(never()).existsUserWithUserName(anyString());
+        then(userTypeGateway).shouldHaveNoInteractions();
+        then(userGateway).should().save(any(User.class));
+        then(updateUserEventPublisher).should().publish(userCaptor.getValue());
     }
 
+    @Test
+    @DisplayName("Deve lançar nullpointer quando o input for nulo")
+    void deveLancaNullPointerQuandoInputForNulo() {
+        assertThatThrownBy(() -> updateUserUseCase.execute(null))
+                .isInstanceOf(NullPointerException.class)
+                .hasMessageContaining("UpdateUserInput cannot be null");
+
+        then(loggedUserGateway).shouldHaveNoInteractions();
+        then(userGateway).shouldHaveNoInteractions();
+        then(userTypeGateway).shouldHaveNoInteractions();
+        then(updateUserEventPublisher).shouldHaveNoInteractions();
+    }
 }
 

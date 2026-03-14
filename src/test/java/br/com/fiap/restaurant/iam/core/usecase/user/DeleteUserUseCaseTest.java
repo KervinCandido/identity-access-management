@@ -5,6 +5,7 @@ import br.com.fiap.restaurant.iam.core.domain.model.util.UserBuilder;
 import br.com.fiap.restaurant.iam.core.domain.roles.UserManagementRoles;
 import br.com.fiap.restaurant.iam.core.exception.OperationNotAllowedException;
 import br.com.fiap.restaurant.iam.core.exception.ResourceNotFoundException;
+import br.com.fiap.restaurant.iam.core.gateway.EventPublisher;
 import br.com.fiap.restaurant.iam.core.gateway.LoggedUserGateway;
 import br.com.fiap.restaurant.iam.core.gateway.UserGateway;
 import org.junit.jupiter.api.DisplayName;
@@ -24,8 +25,14 @@ import static org.mockito.BDDMockito.*;
 @DisplayName("Testes para DeleteUserUseCase")
 class DeleteUserUseCaseTest {
 
-    @Mock private UserGateway userGateway;
-    @Mock private LoggedUserGateway loggedUserGateway;
+    @Mock
+    private UserGateway userGateway;
+
+    @Mock
+    private LoggedUserGateway loggedUserGateway;
+
+    @Mock
+    private EventPublisher<User> deleteUserEventPublisher;
 
     @InjectMocks
     private DeleteUserUseCase deleteUserUseCase;
@@ -47,6 +54,7 @@ class DeleteUserUseCaseTest {
         then(loggedUserGateway).should().hasRole(UserManagementRoles.DELETE_USER);
         then(userGateway).should().findById(userId);
         then(userGateway).should().deleteById(userId);
+        then(deleteUserEventPublisher).should().publish(existingUser);
     }
 
     @Test
@@ -66,6 +74,7 @@ class DeleteUserUseCaseTest {
         then(loggedUserGateway).should().hasRole(UserManagementRoles.DELETE_USER);
         then(userGateway).should().findById(userId);
         then(userGateway).should(never()).deleteById(any());
+        then(deleteUserEventPublisher).shouldHaveNoInteractions();
     }
 
     @Test
@@ -82,6 +91,19 @@ class DeleteUserUseCaseTest {
         then(loggedUserGateway).should().hasRole(UserManagementRoles.DELETE_USER);
         then(userGateway).should(never()).findById(any());
         then(userGateway).should(never()).deleteById(any());
+        then(deleteUserEventPublisher).shouldHaveNoInteractions();
+    }
+
+
+    @Test
+    @DisplayName("Deve lançar nullpointer quando o input for nulo")
+    void deveLancaNullPointerQuandoInputForNulo() {
+        assertThatThrownBy(() -> deleteUserUseCase.execute(null))
+                .isInstanceOf(NullPointerException.class)
+                .hasMessageContaining("userId cannot be null");
+
+        then(userGateway).shouldHaveNoInteractions();
+        then(deleteUserEventPublisher).shouldHaveNoInteractions();
     }
 }
 

@@ -21,10 +21,20 @@ import static org.mockito.BDDMockito.*;
 @DisplayName("Testes para CreateUserUseCase")
 class CreateUserUseCaseTest {
 
-    @Mock private UserGateway userGateway;
-    @Mock private UserTypeGateway userTypeGateway;
-    @Mock private LoggedUserGateway loggedUserGateway;
-    @Mock private PasswordHasherGateway passwordHasherGateway;
+    @Mock
+    private UserGateway userGateway;
+
+    @Mock
+    private UserTypeGateway userTypeGateway;
+
+    @Mock
+    private LoggedUserGateway loggedUserGateway;
+
+    @Mock
+    private PasswordHasherGateway passwordHasherGateway;
+
+    @Mock
+    private EventPublisher<User> createUserEventPublisher;
 
     @InjectMocks
     private CreateUserUseCase createUserUseCase;
@@ -34,7 +44,7 @@ class CreateUserUseCaseTest {
 
     @Test
     @DisplayName("Deve criar um usuário com sucesso (salvando hash e sem vazar password)")
-    void shouldCreateUserSuccessfully() {
+    void deveCriarUmUsuarioComSucesso() {
         // Arrange
         Long userTypeId = 1L;
 
@@ -81,11 +91,12 @@ class CreateUserUseCaseTest {
         then(userGateway).should().existsUserWithEmail("maria@teste.com");
         then(userTypeGateway).should().findById(userTypeId);
         then(passwordHasherGateway).should().hash("senhaSegura123");
+        then(createUserEventPublisher).should().publish(userCaptor.getValue());
     }
 
     @Test
     @DisplayName("Deve lançar exceção quando usuário logado não tem permissão")
-    void shouldThrowWhenNoPermission() {
+    void deveLancarExcecaoQuandoUsuarioLogadoNaoTemPermissao() {
         // Arrange
         var input = new CreateUserInput("Maria", "maria.oliveira","maria@teste.com", "123", null, 1L);
 
@@ -98,11 +109,12 @@ class CreateUserUseCaseTest {
         then(userGateway).should(never()).save(any());
         then(passwordHasherGateway).should(never()).hash(any());
         then(userTypeGateway).should(never()).findById(any());
+        then(createUserEventPublisher).shouldHaveNoInteractions();
     }
 
     @Test
     @DisplayName("Deve lançar exceção quando email já está em uso")
-    void shouldThrowWhenEmailAlreadyInUse() {
+    void deveLancarExcecaoQuandoEmailJaEstaEmUso() {
         // Arrange
         Long userTypeId = 1L;
         var input = new CreateUserInput("Maria", "maria.oliveira","maria@teste.com", "123", null, userTypeId);
@@ -118,11 +130,12 @@ class CreateUserUseCaseTest {
         then(passwordHasherGateway).should(never()).hash(any());
         then(userGateway).should(never()).save(any());
         then(userTypeGateway).should(never()).findById(any());
+        then(createUserEventPublisher).shouldHaveNoInteractions();
     }
 
     @Test
-    @DisplayName("Deve lançar exceção quando password é blank")
-    void shouldThrowWhenPasswordBlank() {
+    @DisplayName("Deve lançar exceção quando a senha está em branco")
+    void deveLancarExcecaoQuandoSenhaEstaEmBranco() {
         // Arrange
         var input = new CreateUserInput("Maria", "maria.oliveira","maria@teste.com", "   ", null, 1L);
 
@@ -137,11 +150,12 @@ class CreateUserUseCaseTest {
         then(userGateway).should(never()).save(any());
         then(userTypeGateway).should(never()).findById(any());
         then(userGateway).should(never()).existsUserWithEmail(any());
+        then(createUserEventPublisher).shouldHaveNoInteractions();
     }
 
     @Test
     @DisplayName("Deve lançar exceção quando UserType não existe")
-    void shouldThrowWhenUserTypeNotFound() {
+    void deveLancarExcecaoQuandoUserTypeNaoExistir() {
         // Arrange
         Long userTypeId = 999L;
         var input = new CreateUserInput("Maria", "maria.oliveira", "maria@teste.com", "123", null, userTypeId);
@@ -157,11 +171,12 @@ class CreateUserUseCaseTest {
 
         then(passwordHasherGateway).should(never()).hash(any());
         then(userGateway).should(never()).save(any());
+        then(createUserEventPublisher).shouldHaveNoInteractions();
     }
 
     @Test
-    @DisplayName("Deve lançar exceção quando password for null")
-    void shouldThrowWhenPasswordNull() {
+    @DisplayName("Deve lançar exceção quando a senha for nula")
+    void deveLancarExcecaoQuandoSenhaForNular() {
         // Arrange
         var input = new CreateUserInput(
                 "Maria",
@@ -183,11 +198,12 @@ class CreateUserUseCaseTest {
         then(userTypeGateway).should(never()).findById(any());
         then(passwordHasherGateway).should(never()).hash(any());
         then(userGateway).should(never()).save(any());
+        then(createUserEventPublisher).shouldHaveNoInteractions();
     }
 
     @Test
     @DisplayName("Deve lançar exceção quando username já estiver sendo utilizado")
-    void shouldThrowWhenUsernameAlreadyInUse() {
+    void deveLancarExcecaoQuandoNomeDeUsuarioJaExistiverSendoUtilizado() {
         // Arrange
         var input = new CreateUserInput(
                 "Maria",
@@ -212,11 +228,12 @@ class CreateUserUseCaseTest {
         then(userTypeGateway).should(never()).findById(any());
         then(passwordHasherGateway).should(never()).hash(any());
         then(userGateway).should(never()).save(any());
+        then(createUserEventPublisher).shouldHaveNoInteractions();
     }
 
     @Test
-    @DisplayName("Deve mapear Address quando input.address não for null")
-    void shouldMapAddressWhenProvided() {
+    @DisplayName("Deve mapear Endereço com sucesso quando for preenchido")
+    void deveMapearEnderecaoComSucessoQuandoPreenchido() {
         // Arrange
         Long userTypeId = 1L;
 
@@ -269,16 +286,22 @@ class CreateUserUseCaseTest {
     }
 
     @Test
-    @DisplayName("Deve salvar usuário com address nulo quando input.address for null")
-    void shouldSaveUserWithNullAddressWhenAddressInputIsNull() {
+    @DisplayName("Deve salvar usuário sem endereço se não for preenchido")
+    void deveSalvarUsuarioSemEnderecaoSeNaoForPreenchido() {
         // Arrange
         Long userTypeId = 1L;
 
+        String email = "maria@teste.com";
+        String rawPassword = "senhaSegura123";
+        String hashedPassword = "HASHED";
+        String userName = "maria.oliveira";
+        String name = "Maria Oliveira";
+
         var input = new CreateUserInput(
-                "Maria Oliveira",
-                "maria.oliveira",
-                "maria@teste.com",
-                "senhaSegura123",
+                name,
+                userName,
+                email,
+                rawPassword,
                 null, // <- cobre o ramo null do ternário
                 userTypeId
         );
@@ -290,13 +313,21 @@ class CreateUserUseCaseTest {
                 .build();
 
         given(loggedUserGateway.hasRole(UserManagementRoles.CREATE_USER)).willReturn(true);
-        given(userGateway.existsUserWithEmail("maria@teste.com")).willReturn(false);
+        given(userGateway.existsUserWithEmail(email)).willReturn(false);
         given(userTypeGateway.findById(userTypeId)).willReturn(Optional.of(userType));
-        given(passwordHasherGateway.hash("senhaSegura123")).willReturn("HASHED");
+        given(passwordHasherGateway.hash(rawPassword)).willReturn(hashedPassword);
         given(userGateway.save(any(User.class))).willAnswer(inv -> inv.getArgument(0));
 
         // Act
         User result = createUserUseCase.execute(input);
+
+        // Assert
+        assertThat(result).isNotNull();
+        assertThat(result.getId()).isNull();
+        assertThat(result.getName()).isEqualTo(name);
+        assertThat(result.getUsername()).isEqualTo(userName);
+        assertThat(result.getEmail()).isEqualTo(email);
+        assertThat(result.getUserType()).isEqualTo(userType);
 
         // Assert
         then(userGateway).should().save(userCaptor.capture());
@@ -304,6 +335,28 @@ class CreateUserUseCaseTest {
 
         assertThat(saved.getAddress()).isNull();
         assertThat(result.getAddress()).isNull();
+
+        assertThat(saved.getPasswordHash()).isEqualTo(hashedPassword);
+        assertThat(saved.getPasswordHash()).isNotEqualTo(rawPassword);
+
+        then(loggedUserGateway).should().hasRole(UserManagementRoles.CREATE_USER);
+        then(userGateway).should().existsUserWithEmail(email);
+        then(userTypeGateway).should().findById(userTypeId);
+        then(passwordHasherGateway).should().hash(rawPassword);
+        then(createUserEventPublisher).should().publish(userCaptor.getValue());
+    }
+
+    @Test
+    @DisplayName("Deve lançar nullpointer quando o input for nulo")
+    void deveLancaNullPointerQuandoInputForNulo() {
+        assertThatThrownBy(() -> createUserUseCase.execute(null))
+                .isInstanceOf(NullPointerException.class)
+                .hasMessageContaining("CreateUserInput cannot be null");
+
+        then(userGateway).shouldHaveNoInteractions();
+        then(userTypeGateway).shouldHaveNoInteractions();
+        then(passwordHasherGateway).shouldHaveNoInteractions();
+        then(createUserEventPublisher).shouldHaveNoInteractions();
     }
 
 }
