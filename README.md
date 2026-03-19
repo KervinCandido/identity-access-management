@@ -81,9 +81,9 @@ Este serviço é um microserviço Spring Boot responsável pelo Gerenciamento de
 
 A documentação completa da API está disponível via Swagger UI.
 
-- **URL da Documentação (Swagger UI):** <a href="http://localhost:8080/swagger-ui/index.html" target="_blank" rel="noopener noreferrer">Acessar Swagger UI</a>
-- **URL da Definição OpenAPI:** <a href="http://localhost:8080/v3/api-docs" target="_blank" rel="noopener noreferrer">Ver Definição OpenAPI</a>
-- **URL do Actuator:** <a href="http://localhost:8080/actuator/health" target="_blank" rel="noopener noreferrer">Verificar Status da Aplicação</a>
+- **URL da Documentação (Swagger UI):** <a href="http://localhost:8080/swagger-ui/index.html" target="_blank" rel="noopener noreferrer">http://localhost:8080/swagger-ui/index.html</a>
+- **URL da Definição OpenAPI:** <a href="http://localhost:8080/v3/api-docs" target="_blank" rel="noopener noreferrer">http://localhost:8080/v3/api-docs</a>
+- **URL do Actuator:** <a href="http://localhost:8080/actuator/health" target="_blank" rel="noopener noreferrer">http://localhost:8080/actuator/health</a>
 
 
 ### Principais Endpoints
