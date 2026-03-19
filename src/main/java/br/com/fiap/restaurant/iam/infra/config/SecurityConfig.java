@@ -13,6 +13,7 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
@@ -36,60 +37,48 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) {
-        final var userTypeBaseUrl = "/user-types";
-        final var userTypeWithIdUrl = "/user-types/{id}";
-        final var userBaseUrl = "/user";
-        final var userWithIdUrl = "/user/{id}";
-        final var menuItemBaseUrl = "/restaurants/{restaurant-id}/menu";
-        final var menuWithIdUrl = "/restaurants/{restaurant-id}/menu/{id}";
-        final var restaurantWithIdUrl = "/restaurants/{id}";
+
 
         http.httpBasic(AbstractHttpConfigurer::disable)
             .csrf(AbstractHttpConfigurer::disable)
             .cors(AbstractHttpConfigurer::disable)
             .formLogin(AbstractHttpConfigurer::disable)
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(req -> req
-                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                .requestMatchers(
-                        "/v3/api-docs/**",
-                        "/swagger-ui/**",
-                        "/swagger-ui.html",
-                        "/actuator/health",
-                        "/api/v1/_ping"
-                ).permitAll()
-                .requestMatchers(HttpMethod.POST, "/auth").permitAll()
-                .requestMatchers(HttpMethod.GET,"/restaurants", restaurantWithIdUrl, menuItemBaseUrl, menuWithIdUrl).permitAll()
-                .requestMatchers(HttpMethod.GET, "/roles").hasAuthority(RoleRoles.VIEW_ROLE.getRoleName())
-
-                .requestMatchers(HttpMethod.POST, userTypeBaseUrl).hasAuthority(UserTypeRoles.CREATE_USER_TYPE.getRoleName())
-                .requestMatchers(HttpMethod.PUT, userTypeWithIdUrl).hasAuthority(UserTypeRoles.UPDATE_USER_TYPE.getRoleName())
-                .requestMatchers(HttpMethod.DELETE, userTypeWithIdUrl).hasAuthority(UserTypeRoles.DELETE_USER_TYPE.getRoleName())
-                .requestMatchers(HttpMethod.GET, userTypeBaseUrl).hasAuthority(UserTypeRoles.VIEW_USER_TYPE.getRoleName())
-                .requestMatchers(HttpMethod.GET, userTypeWithIdUrl).hasAuthority(UserTypeRoles.VIEW_USER_TYPE.getRoleName())
-
-                .requestMatchers(HttpMethod.POST, userBaseUrl).hasAuthority(UserManagementRoles.CREATE_USER.getRoleName())
-                .requestMatchers(HttpMethod.GET, userBaseUrl).hasAuthority(UserManagementRoles.VIEW_USER.getRoleName())
-                .requestMatchers(HttpMethod.PUT, userWithIdUrl).hasAuthority(UserManagementRoles.UPDATE_USER.getRoleName())
-                .requestMatchers(HttpMethod.GET, userWithIdUrl).hasAuthority(UserManagementRoles.VIEW_USER.getRoleName())
-                .requestMatchers(HttpMethod.DELETE, userWithIdUrl).hasAuthority(UserManagementRoles.DELETE_USER.getRoleName())
-
-                .requestMatchers(HttpMethod.POST, menuItemBaseUrl).hasAuthority(MenuItemRoles.CREATE_MENU_ITEM.getRoleName())
-                .requestMatchers(HttpMethod.PUT, menuWithIdUrl).hasAuthority(MenuItemRoles.UPDATE_MENU_ITEM.getRoleName())
-                .requestMatchers(HttpMethod.DELETE, menuWithIdUrl).hasAuthority(MenuItemRoles.DELETE_MENU_ITEM.getRoleName())
-
-                .requestMatchers(HttpMethod.POST, "/restaurants").hasAuthority(RestaurantRoles.CREATE_RESTAURANT.getRoleName())
-                .requestMatchers(HttpMethod.PUT, restaurantWithIdUrl).hasAuthority(RestaurantRoles.UPDATE_RESTAURANT.getRoleName())
-                .requestMatchers(HttpMethod.DELETE, restaurantWithIdUrl).hasAuthority(RestaurantRoles.DELETE_RESTAURANT.getRoleName())
-
-                .anyRequest().authenticated() // Boa prática: fechar com uma regra padrão
-            ).addFilterBefore(new TokenAuthenticationFilter(jwtService, userRepository), UsernamePasswordAuthenticationFilter.class)
+            .authorizeHttpRequests(this::authorizationManagerRequest)
+            .addFilterBefore(new TokenAuthenticationFilter(jwtService, userRepository), UsernamePasswordAuthenticationFilter.class)
             .oauth2ResourceServer(oauth2 ->oauth2.jwt(Customizer.withDefaults()));
         http.exceptionHandling(customizer ->
             customizer.accessDeniedHandler(accessDeniedHandler())
                     .authenticationEntryPoint(authenticationEntryPoint())
         );
         return http.build();
+    }
+
+    private void authorizationManagerRequest(AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry req) {
+        final var userTypeBaseUrl = "/user-types";
+        final var userTypeWithIdUrl = "/user-types/{id}";
+        final var userBaseUrl = "/user";
+        final var userWithIdUrl = "/user/{id}";
+
+        req.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+            .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/actuator/health").permitAll()
+            .requestMatchers(HttpMethod.POST, "/auth").permitAll()
+
+            .requestMatchers(HttpMethod.GET, "/roles").hasAuthority(RoleRoles.VIEW_ROLE.getRoleName())
+
+            .requestMatchers(HttpMethod.POST, userTypeBaseUrl).hasAuthority(UserTypeRoles.CREATE_USER_TYPE.getRoleName())
+            .requestMatchers(HttpMethod.GET, userTypeBaseUrl).hasAuthority(UserTypeRoles.VIEW_USER_TYPE.getRoleName())
+            .requestMatchers(HttpMethod.GET, userTypeWithIdUrl).hasAuthority(UserTypeRoles.VIEW_USER_TYPE.getRoleName())
+            .requestMatchers(HttpMethod.PUT, userTypeWithIdUrl).hasAuthority(UserTypeRoles.UPDATE_USER_TYPE.getRoleName())
+            .requestMatchers(HttpMethod.DELETE, userTypeWithIdUrl).hasAuthority(UserTypeRoles.DELETE_USER_TYPE.getRoleName())
+
+            .requestMatchers(HttpMethod.POST, userBaseUrl).hasAuthority(UserManagementRoles.CREATE_USER.getRoleName())
+            .requestMatchers(HttpMethod.GET, userBaseUrl).hasAuthority(UserManagementRoles.VIEW_USER.getRoleName())
+            .requestMatchers(HttpMethod.GET, userWithIdUrl).hasAuthority(UserManagementRoles.VIEW_USER.getRoleName())
+            .requestMatchers(HttpMethod.PUT, userWithIdUrl).hasAuthority(UserManagementRoles.UPDATE_USER.getRoleName())
+            .requestMatchers(HttpMethod.DELETE, userWithIdUrl).hasAuthority(UserManagementRoles.DELETE_USER.getRoleName())
+
+            .anyRequest().authenticated();
     }
 
     private AccessDeniedHandler accessDeniedHandler() {
