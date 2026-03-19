@@ -11,22 +11,22 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 
 import java.util.concurrent.CompletableFuture;
 
-public class CreateUserEventPublisher implements EventPublisher<User> {
+public class UpdatedUserEventPublisher implements EventPublisher<User> {
 
-    private static final Logger log = LoggerFactory.getLogger(CreateUserEventPublisher.class);
+    private static final Logger log = LoggerFactory.getLogger(UpdatedUserEventPublisher.class);
 
-    public static final String USER_CREATE_EVENT_TYPE = "user.create";
+    public static final String USER_UPDATE_EVENT_TYPE = "user.updated";
     private final RabbitTemplate rabbitTemplate;
 
-    public CreateUserEventPublisher(RabbitTemplate rabbitTemplate) {
+    public UpdatedUserEventPublisher(RabbitTemplate rabbitTemplate) {
         this.rabbitTemplate = rabbitTemplate;
     }
 
     @Override
     public CompletableFuture<Void> publish(User event) {
-        var createUserEvent = new EventDTO<>(USER_CREATE_EVENT_TYPE, new UserDTO(event));
-        log.info("Publicando CreateUserEvent: {}", createUserEvent);
+        var updateUserEvent = new EventDTO<>(USER_UPDATE_EVENT_TYPE, new UserDTO(event));
+        log.info("Publicando UpdateUserEvent: {}", updateUserEvent);
         return CompletableFuture.runAsync(() -> rabbitTemplate
-                .convertAndSend(RabbitMQConfig.USER_EXCHANGE, RabbitMQConfig.USER_CREATE_ROUTING_KEY, createUserEvent));
+                .convertAndSend(RabbitMQConfig.USER_EXCHANGE, RabbitMQConfig.USER_UPDATE_ROUTING_KEY, updateUserEvent));
     }
 }

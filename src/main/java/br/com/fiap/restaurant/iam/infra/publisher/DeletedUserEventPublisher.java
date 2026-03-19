@@ -12,14 +12,14 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
-public class DeleteUserEventPublisher implements EventPublisher<User> {
+public class DeletedUserEventPublisher implements EventPublisher<User> {
 
-    private static final Logger log = LoggerFactory.getLogger(DeleteUserEventPublisher.class);
+    private static final Logger log = LoggerFactory.getLogger(DeletedUserEventPublisher.class);
 
-    public static final String USER_DELETE_EVENT_TYPE = "user.delete";
+    public static final String USER_DELETE_EVENT_TYPE = "user.deleted";
     private final RabbitTemplate rabbitTemplate;
 
-    public DeleteUserEventPublisher(RabbitTemplate rabbitTemplate) {
+    public DeletedUserEventPublisher(RabbitTemplate rabbitTemplate) {
         this.rabbitTemplate = rabbitTemplate;
     }
 

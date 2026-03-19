@@ -14,7 +14,7 @@ Este serviço é um microserviço Spring Boot responsável pelo Gerenciamento de
 ## Tecnologias Utilizadas
 
 - **Java 21**
-- **Spring Boot 3**
+- **Spring Boot 4.0.1**
   - Spring Web
   - Spring Security (com OAuth2 Resource Server)
   - Spring Data JPA
@@ -40,7 +40,7 @@ Este serviço é um microserviço Spring Boot responsável pelo Gerenciamento de
 
 1.  **Clone o repositório:**
     ```bash
-    git clone `https://github.com/KervinCandido/identity-access-management`
+    git clone `https://github.com/KervinCandido/identity-access-management.git`
     cd identity-access-management
     ```
 
@@ -94,6 +94,12 @@ A documentação completa da API está disponível via Swagger UI.
 - `GET /user`: Lista todos os usuários (requer permissão).
 - `POST /user`: Cria um novo usuário (requer permissão).
 - `GET /user/{id}`: Obtém detalhes de um usuário específico (requer permissão).
+
+### Filas do RabbitMQ
+
+- `restaurant.user.created`: Enviado quando um novo usuário é criado.
+- `restaurant.user.updated`: Enviado quando um usuário existente é atualizado.
+- `restaurant.user.deleted`: Enviado quando um usuário é deletado
 
 ---
 

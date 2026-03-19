@@ -4,9 +4,9 @@ import br.com.fiap.restaurant.iam.core.gateway.*;
 import br.com.fiap.restaurant.iam.core.usecase.role.ListRolesUseCase;
 import br.com.fiap.restaurant.iam.core.usecase.user.*;
 import br.com.fiap.restaurant.iam.core.usecase.usertype.*;
-import br.com.fiap.restaurant.iam.infra.publisher.CreateUserEventPublisher;
-import br.com.fiap.restaurant.iam.infra.publisher.DeleteUserEventPublisher;
-import br.com.fiap.restaurant.iam.infra.publisher.UpdateUserEventPublisher;
+import br.com.fiap.restaurant.iam.infra.publisher.CreatedUserEventPublisher;
+import br.com.fiap.restaurant.iam.infra.publisher.DeletedUserEventPublisher;
+import br.com.fiap.restaurant.iam.infra.publisher.UpdatedUserEventPublisher;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -80,7 +80,7 @@ public class UseCaseConfig {
             userTypeGateway,
             loggedUserGateway,
             passwordHasherGateway,
-            new CreateUserEventPublisher(rabbitTemplate)
+            new CreatedUserEventPublisher(rabbitTemplate)
         );
     }
 
@@ -91,7 +91,7 @@ public class UseCaseConfig {
             LoggedUserGateway loggedUserGateway,
             RabbitTemplate rabbitTemplate
     ) {
-        return new UpdateUserUseCase(userGateway, userTypeGateway, loggedUserGateway, new UpdateUserEventPublisher(rabbitTemplate));
+        return new UpdateUserUseCase(userGateway, userTypeGateway, loggedUserGateway, new UpdatedUserEventPublisher(rabbitTemplate));
     }
 
     @Bean
@@ -100,7 +100,7 @@ public class UseCaseConfig {
             LoggedUserGateway loggedUserGateway,
             RabbitTemplate rabbitTemplate
     ) {
-        return new DeleteUserUseCase(userGateway, loggedUserGateway, new DeleteUserEventPublisher(rabbitTemplate));
+        return new DeleteUserUseCase(userGateway, loggedUserGateway, new DeletedUserEventPublisher(rabbitTemplate));
     }
 
     @Bean
