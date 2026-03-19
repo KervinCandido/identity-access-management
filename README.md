@@ -81,9 +81,9 @@ Este serviço é um microserviço Spring Boot responsável pelo Gerenciamento de
 
 A documentação completa da API está disponível via Swagger UI.
 
-- **URL da Documentação (Swagger UI):** <a href="http://localhost:8080/swagger-ui/index.html" target="_blank" rel="noopener noreferrer">http://localhost:8080/swagger-ui/index.html</a>
-- **URL da Definição OpenAPI:** <a href="http://localhost:8080/v3/api-docs" target="_blank" rel="noopener noreferrer">http://localhost:8080/v3/api-docs</a>
-- **URL do Actuator:** <a href="http://localhost:8080/actuator/health" target="_blank" rel="noopener noreferrer">http://localhost:8080/actuator/health</a>
+- **URL da Documentação (Swagger UI):** [http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html)
+- **URL da Definição OpenAPI:** [http://localhost:8080/v3/api-docs](http://localhost:8080/v3/api-docs)
+- **URL do Actuator:** [http://localhost:8080/actuator/health] (http://localhost:8080/actuator/health)
 
 
 ### Principais Endpoints
@@ -102,3 +102,4 @@ A documentação completa da API está disponível via Swagger UI.
 - `restaurant.user.deleted`: Enviado quando um usuário é deletado
 
 ---
+
