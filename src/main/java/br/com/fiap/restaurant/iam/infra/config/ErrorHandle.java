@@ -4,7 +4,10 @@ import br.com.fiap.restaurant.iam.core.exception.BusinessException;
 import br.com.fiap.restaurant.iam.core.exception.InvalidCredentialsException;
 import br.com.fiap.restaurant.iam.core.exception.OperationNotAllowedException;
 import br.com.fiap.restaurant.iam.infra.controller.response.FieldErrorResponse;
-import br.com.fiap.restaurant.iam.infra.controller.response.SimpleErroResponse;
+import br.com.fiap.restaurant.iam.infra.controller.response.SimpleErrorResponse;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.http.HttpStatus;
@@ -30,36 +33,42 @@ public class ErrorHandle {
 
     @ResponseStatus(code =  HttpStatus.FORBIDDEN)
     @ExceptionHandler({OperationNotAllowedException.class})
-    public SimpleErroResponse handleOperationNotAllowedException(OperationNotAllowedException e) {
-        return new SimpleErroResponse(e.getMessage());
+    @ApiResponse(responseCode = "403", description = "Operação não permitida", content = @Content(schema = @Schema(implementation = SimpleErrorResponse.class)))
+    public SimpleErrorResponse handleOperationNotAllowedException(OperationNotAllowedException e) {
+        return new SimpleErrorResponse(e.getMessage());
     }
 
     @ResponseStatus(code = HttpStatus.FORBIDDEN)
     @ExceptionHandler(AccessDeniedException.class)
-    public SimpleErroResponse handleAccessDeniedException(AccessDeniedException e) {
-        return new SimpleErroResponse("Acesso negado.");
+    @ApiResponse(responseCode = "403", description = "Acesso negado", content = @Content(schema = @Schema(implementation = SimpleErrorResponse.class)))
+    public SimpleErrorResponse handleAccessDeniedException(AccessDeniedException e) {
+        return new SimpleErrorResponse(e.getMessage());
     }
 
     @ResponseStatus(code = HttpStatus.UNAUTHORIZED)
     @ExceptionHandler(UsernameNotFoundException.class)
-    public SimpleErroResponse handleUsernameNotFoundException(UsernameNotFoundException e) {
-        return new SimpleErroResponse(e.getMessage());
+    @ApiResponse(responseCode = "401", description = "Usuário não encontrado", content = @Content(schema = @Schema(implementation = SimpleErrorResponse.class)))
+    public SimpleErrorResponse handleUsernameNotFoundException(UsernameNotFoundException e) {
+        return new SimpleErrorResponse(e.getMessage());
     }
 
     @ResponseStatus(code = HttpStatus.UNAUTHORIZED)
     @ExceptionHandler(InvalidCredentialsException.class)
-    public SimpleErroResponse handleInvalidCredentialsException(InvalidCredentialsException e) {
-        return new SimpleErroResponse(e.getMessage());
+    @ApiResponse(responseCode = "401", description = "Credenciais inválidas", content = @Content(schema = @Schema(implementation = SimpleErrorResponse.class)))
+    public SimpleErrorResponse handleInvalidCredentialsException(InvalidCredentialsException e) {
+        return new SimpleErrorResponse(e.getMessage());
     }
 
     @ResponseStatus(code = HttpStatus.BAD_REQUEST)
     @ExceptionHandler(BusinessException.class)
-    public SimpleErroResponse handleBusinessException(BusinessException e) {
-        return new SimpleErroResponse(e.getMessage());
+    @ApiResponse(responseCode = "400", description = "Requisição inválida", content = @Content(schema = @Schema(implementation = SimpleErrorResponse.class)))
+    public SimpleErrorResponse handleBusinessException(BusinessException e) {
+        return new SimpleErrorResponse(e.getMessage());
     }
 
     @ResponseStatus(code = HttpStatus.BAD_REQUEST)
     @ExceptionHandler(MethodArgumentNotValidException.class)
+    @ApiResponse(responseCode = "400", description = "Erro de validação de campos", content = @Content(schema = @Schema(implementation = FieldErrorResponse.class)))
     public List<FieldErrorResponse> handle(MethodArgumentNotValidException exception) {
         List<FieldError> fieldErrors = exception.getBindingResult().getFieldErrors();
 

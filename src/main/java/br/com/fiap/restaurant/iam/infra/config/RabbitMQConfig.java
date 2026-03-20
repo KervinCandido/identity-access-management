@@ -12,13 +12,13 @@ import org.springframework.context.annotation.Configuration;
 public class RabbitMQConfig {
 
     public static final String USER_EXCHANGE = "ex.user";
-    public static final String RESTAURANT_USER_CREATE_QUEUE = "restaurant.user.create";
-    public static final String RESTAURANT_USER_UPDATE_QUEUE = "restaurant.user.update";
-    public static final String RESTAURANT_USER_DELETE_QUEUE = "restaurant.user.delete";
+    public static final String RESTAURANT_USER_CREATE_QUEUE = "restaurant.user.created";
+    public static final String RESTAURANT_USER_UPDATE_QUEUE = "restaurant.user.updated";
+    public static final String RESTAURANT_USER_DELETE_QUEUE = "restaurant.user.deleted";
 
-    public static final String USER_CREATE_ROUTING_KEY = "user.create";
-    public static final String USER_UPDATE_ROUTING_KEY = "user.update";
-    public static final String USER_DELETE_ROUTING_KEY = "user.delete";
+    public static final String USER_CREATE_ROUTING_KEY = "user.created";
+    public static final String USER_UPDATE_ROUTING_KEY = "user.updated";
+    public static final String USER_DELETE_ROUTING_KEY = "user.deleted";
 
     @Bean("userExchange")
     public DirectExchange userExchange() {
