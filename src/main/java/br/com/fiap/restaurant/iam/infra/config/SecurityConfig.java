@@ -1,7 +1,7 @@
 package br.com.fiap.restaurant.iam.infra.config;
 
 import br.com.fiap.restaurant.iam.core.domain.roles.*;
-import br.com.fiap.restaurant.iam.infra.controller.response.SimpleErroResponse;
+import br.com.fiap.restaurant.iam.infra.controller.response.SimpleErrorResponse;
 import br.com.fiap.restaurant.iam.infra.persistence.repository.UserRepository;
 import br.com.fiap.restaurant.iam.infra.service.JwtService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -86,7 +86,7 @@ public class SecurityConfig {
             var writer = response.getWriter();
             response.setStatus(403);
             response.setContentType("application/json");
-            writer.write(objectMapper.writeValueAsString(new SimpleErroResponse("The current user does not have permission.")));
+            writer.write(objectMapper.writeValueAsString(new SimpleErrorResponse("The current user does not have permission.")));
         };
     }
 
@@ -95,7 +95,7 @@ public class SecurityConfig {
             var writer = response.getWriter();
             response.setStatus(401);
             response.setContentType("application/json");
-            writer.write(objectMapper.writeValueAsString(new SimpleErroResponse("User not authenticated. Authentication is required to access this resource.")));
+            writer.write(objectMapper.writeValueAsString(new SimpleErrorResponse("User not authenticated. Authentication is required to access this resource.")));
         };
     }
 }
