@@ -83,7 +83,7 @@ A documentação completa da API está disponível via Swagger UI.
 
 - **URL da Documentação (Swagger UI):** [http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html)
 - **URL da Definição OpenAPI:** [http://localhost:8080/v3/api-docs](http://localhost:8080/v3/api-docs)
-- **URL do Actuator:** [http://localhost:8080/actuator/health] (http://localhost:8080/actuator/health)
+- **URL do Actuator:** [http://localhost:8080/actuator/health](http://localhost:8080/actuator/health)
 
 
 ### Principais Endpoints
