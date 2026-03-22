@@ -14,7 +14,7 @@ Este serviço é um microserviço Spring Boot responsável pelo Gerenciamento de
 ## Tecnologias Utilizadas
 
 - **Java 21**
-- **Spring Boot 4.0.1**
+- **Spring Boot 4.0.3**
   - Spring Web
   - Spring Security (com OAuth2 Resource Server)
   - Spring Data JPA

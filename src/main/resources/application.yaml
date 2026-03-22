@@ -27,7 +27,14 @@ springdoc:
     enabled: true
   default-produces-media-type: application/json
   default-consumes-media-type: application/json
-
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,info
+  endpoint:
+    health:
+      show-details: always
 
 
 
